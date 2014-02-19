@@ -105,30 +105,40 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     }
 }
 
-- (void)showWithContentView:(UIView *)contentView{
-    [self showWithContentView:contentView andAnimated:YES];
-}
-
+#pragma mark - show controller
 - (void)showWithContentViewController:(UIViewController *)contentViewController{
-    [self showWithContentViewController:contentViewController andAnimated:YES];
+    [self showWithContentViewController:contentViewController animated:YES withCompletionBlock:nil];
 }
 
-- (void)showWithContentViewController:(UIViewController *)contentViewController andAnimated:(BOOL)animated{
+- (void)showWithContentViewController:(UIViewController *)contentViewController withCompletionBlock:(void (^)())completion{
+    [self showWithContentViewController:contentViewController animated:YES withCompletionBlock:completion];
+}
+
+- (void)showWithContentViewController:(UIViewController *)contentViewController animated:(BOOL)animated withCompletionBlock:(void (^)())completion{
     self.contentViewController = contentViewController;
-    [self showWithContentView:contentViewController.view andAnimated:YES];
+    [self showWithContentView:contentViewController.view animated:YES withCompletionBlock:completion];
 }
 
-- (void)showWithContentView:(UIView *)contentView andAnimated:(BOOL)animated {
+#pragma mark - show view
+- (void)showWithContentView:(UIView *)contentView{
+    [self showWithContentView:contentView animated:YES withCompletionBlock:nil];
+}
+
+- (void)showWithContentView:(UIView *)contentView withCompletionBlock:(void (^)())completion{
+    [self showWithContentView:contentView animated:YES withCompletionBlock:completion];
+}
+
+- (void)showWithContentView:(UIView *)contentView animated:(BOOL)animated withCompletionBlock:(void (^)())completion {
     if (self.window) {
         [self hideAnimated:animated withCompletionBlock:^{
-            [self internalShowWithContentView:contentView andAnimated:animated];
+            [self internalShowWithContentView:contentView animated:animated withCompletionBlock:completion];
         }];
         return;
     }
-    [self internalShowWithContentView:contentView andAnimated:animated];
+    [self internalShowWithContentView:contentView animated:animated withCompletionBlock:completion];
 }
 
-- (void)internalShowWithContentView:(UIView *)contentView andAnimated:(BOOL)animated
+- (void)internalShowWithContentView:(UIView *)contentView animated:(BOOL)animated withCompletionBlock:(void (^)())completion
 {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
@@ -210,6 +220,9 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
                     containerView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, 1);
                 } completion:^(BOOL finished2) {
                     containerView.layer.shouldRasterize = NO;
+                    if(completion){
+                        completion();
+                    }
                     [[NSNotificationCenter defaultCenter] postNotificationName:KGModalDidShowNotification object:self];
                 }];
             }];

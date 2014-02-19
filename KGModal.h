@@ -77,14 +77,22 @@ typedef NS_ENUM(NSUInteger, KGModalContentPosition){
 // Set the content view to display in the modal and display with animations
 - (void)showWithContentView:(UIView *)contentView;
 
+// Set the content view to display in the modal and display with animations,
+// run the completion after the modal is shown
+- (void)showWithContentView:(UIView *)contentView withCompletionBlock:(void(^)())completion;
+
 // Set the content view to display in the modal and whether the modal should animate in
-- (void)showWithContentView:(UIView *)contentView andAnimated:(BOOL)animated;
+- (void)showWithContentView:(UIView *)contentView animated:(BOOL)animated withCompletionBlock:(void(^)())completion;
 
 // Set the content view controller to display in the modal and display with animations
 - (void)showWithContentViewController:(UIViewController *)contentViewController;
 
+// Set the content view controller to display in the modal and display with animations,
+// run the completion after the modal is shown
+- (void)showWithContentViewController:(UIViewController *)contentViewController withCompletionBlock:(void(^)())completion;
+
 // Set the content view controller to display in the modal and whether the modal should animate in
-- (void)showWithContentViewController:(UIViewController *)contentViewController andAnimated:(BOOL)animated;
+- (void)showWithContentViewController:(UIViewController *)contentViewController animated:(BOOL)animated withCompletionBlock:(void(^)())completion;
 
 // Hide the modal with animations
 - (void)hide;

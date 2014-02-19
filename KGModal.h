@@ -55,6 +55,14 @@ typedef NS_ENUM(NSUInteger, KGModalContentPosition){
 // Defaults to gradient, this looks better but takes a bit more time to display on the retina iPad
 @property (nonatomic) KGModalBackgroundDisplayStyle backgroundDisplayStyle;
 
+// The content display top margin on portrait, working for contentPositionTop only
+// Defaults to 0
+@property (nonatomic) CGFloat contentPortraitTopMargin;
+
+// The content display top margin on landscape, working for contentPositionTop only
+// Defaults to 0
+@property (nonatomic) CGFloat contentLandscapeTopMargin;
+
 // The content display position
 // Defaults to center
 @property (nonatomic) KGModalContentPosition contentPosition;

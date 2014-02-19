@@ -69,6 +69,9 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     self.closeButtonType = KGModalCloseButtonTypeLeft;
     self.modalBackgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
     self.bordered = YES;
+    self.contentPosition = KGModalContentPositionCenter;
+    self.contentLandscapeTopMargin = 0;
+    self.contentPortraitTopMargin = 0;
     
     return self;
 }
@@ -94,9 +97,9 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     if (_contentPosition == KGModalContentPositionTop) {
         CGRect containerViewRect = self.containerView.frame;
         if (UIInterfaceOrientationIsPortrait(toInterfaceOrientation)){
-            containerViewRect.origin.y = 100;
+            containerViewRect.origin.y = _contentPortraitTopMargin;
         } else {
-            containerViewRect.origin.y = 0;
+            containerViewRect.origin.y = _contentLandscapeTopMargin;
         }
         self.containerView.frame = containerViewRect;
     }
@@ -116,6 +119,17 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
 }
 
 - (void)showWithContentView:(UIView *)contentView andAnimated:(BOOL)animated {
+    if (self.window) {
+        [self hideAnimated:animated withCompletionBlock:^{
+            [self internalShowWithContentView:contentView andAnimated:animated];
+        }];
+        return;
+    }
+    [self internalShowWithContentView:contentView andAnimated:animated];
+}
+
+- (void)internalShowWithContentView:(UIView *)contentView andAnimated:(BOOL)animated
+{
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     self.window.opaque = NO;
@@ -137,10 +151,10 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
         if (_contentPosition == KGModalContentPositionTop) {
             if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)){
                 containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
-                containerViewRect.origin.y = 100;
+                containerViewRect.origin.y = _contentPortraitTopMargin;
             } else {
                 containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
-                containerViewRect.origin.y = 0;
+                containerViewRect.origin.y = _contentLandscapeTopMargin;
             }
         }
         autoResizing = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;

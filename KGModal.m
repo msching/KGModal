@@ -27,6 +27,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
 @interface KGModalContainerView : UIView
 @property (weak, nonatomic) CALayer *styleLayer;
 @property (strong, nonatomic) UIColor *modalBackgroundColor;
+@property (nonatomic) BOOL bordered;
 @end
 
 @interface KGModalCloseButton : UIButton
@@ -43,7 +44,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
 @property (weak, nonatomic) KGModalContainerView *containerView;
 @property (weak, nonatomic) KGModalCloseButton *closeButton;
 @property (weak, nonatomic) UIView *contentView;
-
+- (void)willRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation;
 @end
 
 @implementation KGModal
@@ -67,6 +68,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     self.animateWhenDismissed = YES;
     self.closeButtonType = KGModalCloseButtonTypeLeft;
     self.modalBackgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
+    self.bordered = YES;
     
     return self;
 }
@@ -85,6 +87,18 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
             closeFrame.origin.x = 0;
         }
         self.closeButton.frame = closeFrame;
+    }
+}
+
+- (void)willRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation{
+    if (_contentPosition == KGModalContentPositionTop) {
+        CGRect containerViewRect = self.containerView.frame;
+        if (UIInterfaceOrientationIsPortrait(toInterfaceOrientation)){
+            containerViewRect.origin.y = 100;
+        } else {
+            containerViewRect.origin.y = 0;
+        }
+        self.containerView.frame = containerViewRect;
     }
 }
 
@@ -111,14 +125,29 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     self.viewController = viewController;
     
     CGFloat padding = 17;
+    UIViewAutoresizing autoResizing = UIViewAutoresizingNone;
     CGRect containerViewRect = CGRectInset(contentView.bounds, -padding, -padding);
     containerViewRect.origin.x = containerViewRect.origin.y = 0;
-    containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
-    containerViewRect.origin.y = round(CGRectGetMidY(self.window.bounds)-CGRectGetMidY(containerViewRect));
+    if (_contentPosition == KGModalContentPositionCenter) {
+        containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
+        containerViewRect.origin.y = round(CGRectGetMidY(self.window.bounds)-CGRectGetMidY(containerViewRect));
+        autoResizing = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|
+        UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleBottomMargin;
+    } else if (_contentPosition == KGModalContentPositionTop){
+        if (_contentPosition == KGModalContentPositionTop) {
+            if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)){
+                containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
+                containerViewRect.origin.y = 100;
+            } else {
+                containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
+                containerViewRect.origin.y = 0;
+            }
+        }
+        autoResizing = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
+    }
     KGModalContainerView *containerView = [[KGModalContainerView alloc] initWithFrame:containerViewRect];
     containerView.modalBackgroundColor = self.modalBackgroundColor;
-    containerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|
-    UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleBottomMargin;
+    containerView.autoresizingMask = autoResizing;
     containerView.layer.rasterizationScale = [[UIScreen mainScreen] scale];
     contentView.frame = (CGRect){padding, padding, contentView.bounds.size};
     [containerView addSubview:contentView];
@@ -243,6 +272,13 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     }
 }
 
+- (void)setBordered:(BOOL)bordered{
+    if (_bordered != bordered) {
+        _bordered = bordered;
+        self.containerView.bordered = bordered;
+    }
+}
+
 - (void)dealloc{
     [self cleanup];
 }
@@ -268,6 +304,10 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     self.styleView = styleView;
 }
 
+- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration{
+	[[KGModal sharedInstance] willRotationToInterfaceOrientation:toInterfaceOrientation];
+}
+
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation{
     return [[KGModal sharedInstance] shouldRotate];
 }
@@ -290,7 +330,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     styleLayer.shadowColor= [[UIColor blackColor] CGColor];
     styleLayer.shadowOffset = CGSizeMake(0, 0);
     styleLayer.shadowOpacity = 0.5;
-    styleLayer.borderWidth = 1;
+    styleLayer.borderWidth = _bordered ? 1 : 0;
     styleLayer.borderColor = [[UIColor whiteColor] CGColor];
     styleLayer.frame = CGRectInset(self.bounds, 12, 12);
     [self.layer addSublayer:styleLayer];
@@ -303,6 +343,13 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     if(_modalBackgroundColor != modalBackgroundColor){
         _modalBackgroundColor = modalBackgroundColor;
         self.styleLayer.backgroundColor = [modalBackgroundColor CGColor];
+    }
+}
+
+- (void)setBordered:(BOOL)bordered{
+    if (_bordered != bordered) {
+        _bordered = bordered;
+        self.styleLayer.borderWidth = bordered ? 1 : 0;
     }
 }
 

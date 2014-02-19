@@ -24,6 +24,11 @@ typedef NS_ENUM(NSUInteger, KGModalCloseButtonType){
     KGModalCloseButtonTypeRight
 };
 
+typedef NS_ENUM(NSUInteger, KGModalContentPosition){
+    KGModalContentPositionCenter,
+    KGModalContentPositionTop
+};
+
 @interface KGModal : NSObject
 
 // Determines if the modal should dismiss if the user taps outside of the modal view
@@ -42,9 +47,17 @@ typedef NS_ENUM(NSUInteger, KGModalCloseButtonType){
 // Defaults black with 0.5 opacity
 @property (strong, nonatomic) UIColor *modalBackgroundColor;
 
+// Determines if the modal should show border
+// Defaults to YES
+@property (nonatomic) BOOL bordered;
+
 // The background display style, can be a transparent radial gradient or a transparent black
 // Defaults to gradient, this looks better but takes a bit more time to display on the retina iPad
 @property (nonatomic) KGModalBackgroundDisplayStyle backgroundDisplayStyle;
+
+// The content display position
+// Defaults to center
+@property (nonatomic) KGModalContentPosition contentPosition;
 
 // Determines if the modal should rotate when the device rotates
 // Defaults to YES, only applies to iOS5

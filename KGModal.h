@@ -63,9 +63,6 @@ typedef NS_ENUM(NSUInteger, KGModalContentPosition){
 // Defaults to 0
 @property (nonatomic) CGFloat contentLandscapeTopMargin;
 
-// The content display position
-// Defaults to center
-@property (nonatomic) KGModalContentPosition contentPosition;
 
 // Determines if the modal should rotate when the device rotates
 // Defaults to YES, only applies to iOS5

@@ -44,6 +44,8 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
 @property (weak, nonatomic) KGModalContainerView *containerView;
 @property (weak, nonatomic) KGModalCloseButton *closeButton;
 @property (weak, nonatomic) UIView *contentView;
+@property (assign, nonatomic) BOOL keyboardShown;
+@property (nonatomic) KGModalContentPosition contentPosition;
 - (void)willRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation;
 @end
 
@@ -93,8 +95,53 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     }
 }
 
+#pragma mark - keyboard
+- (void)addKeyboardObserView{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+}
+
+- (void)removeKeyboardObserView{
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
+}
+
+- (void)keyboardWillShow:(NSNotification *)notification{
+    self.keyboardShown = YES;
+    [self adjustViewForKeyboardNotification:notification];
+}
+
+- (void)keyboardWillHide:(NSNotification *)notification{
+    self.keyboardShown = NO;
+    [self adjustViewForKeyboardNotification:notification];
+}
+
+- (void)adjustViewForKeyboardNotification:(NSNotification *)notification{
+    NSTimeInterval duration = [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    UIViewAnimationCurve curve = [notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] unsignedIntegerValue];
+    [UIView beginAnimations:@"setContainerViewPosition" context:nil];
+    [UIView setAnimationBeginsFromCurrentState:YES];
+    [UIView setAnimationCurve:curve];
+    [UIView setAnimationDuration:duration];
+    CGRect containerViewRect = self.containerView.frame;
+    if (_contentPosition == KGModalContentPositionTop || self.keyboardShown){
+        if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)){
+            containerViewRect.origin.y = _contentPortraitTopMargin;
+        } else {
+            containerViewRect.origin.y = _contentLandscapeTopMargin;
+        }
+        containerViewRect.origin.x = round(CGRectGetMidX(self.viewController.view.bounds)-CGRectGetMidX(self.containerView.bounds));
+    }else if (_contentPosition == KGModalContentPositionCenter) {
+        containerViewRect.origin.x = round(CGRectGetMidX(self.viewController.view.bounds)-CGRectGetMidX(self.containerView.bounds));
+        containerViewRect.origin.y = round(CGRectGetMidY(self.viewController.view.bounds)-CGRectGetMidY(self.containerView.bounds));
+    }
+    self.containerView.frame = containerViewRect;
+    [UIView commitAnimations];
+}
+
+#pragma mark - rotation
 - (void)willRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation{
-    if (_contentPosition == KGModalContentPositionTop) {
+    if (_contentPosition == KGModalContentPositionTop || self.keyboardShown) {
         CGRect containerViewRect = self.containerView.frame;
         if (UIInterfaceOrientationIsPortrait(toInterfaceOrientation)){
             containerViewRect.origin.y = _contentPortraitTopMargin;
@@ -147,6 +194,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     KGModalViewController *viewController = [[KGModalViewController alloc] init];
     self.window.rootViewController = viewController;
     self.viewController = viewController;
+    self.contentView = contentView;
     
     CGFloat padding = 17;
     UIViewAutoresizing autoResizing = UIViewAutoresizingNone;
@@ -158,14 +206,12 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
         autoResizing = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|
         UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleBottomMargin;
     } else if (_contentPosition == KGModalContentPositionTop){
-        if (_contentPosition == KGModalContentPositionTop) {
-            if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)){
-                containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
-                containerViewRect.origin.y = _contentPortraitTopMargin;
-            } else {
-                containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
-                containerViewRect.origin.y = _contentLandscapeTopMargin;
-            }
+        if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation)){
+            containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
+            containerViewRect.origin.y = _contentPortraitTopMargin;
+        } else {
+            containerViewRect.origin.x = round(CGRectGetMidX(self.window.bounds)-CGRectGetMidX(containerViewRect));
+            containerViewRect.origin.y = _contentLandscapeTopMargin;
         }
         autoResizing = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
     }
@@ -195,6 +241,7 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(tapCloseAction:)
                                                  name:KGModalGradientViewTapped object:nil];
+    [self addKeyboardObserView];
     
     // The window has to be un-hidden on the main thread
     // This will cause the window to display
@@ -284,12 +331,17 @@ NSString *const KGModalDidHideNotification = @"KGModalDidHideNotification";
 }
 
 - (void)cleanup{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:KGModalGradientViewTapped object:nil];
+    [self removeKeyboardObserView];
     [self.containerView removeFromSuperview];
     [[[[UIApplication sharedApplication] delegate] window] makeKeyWindow];
     [self.window removeFromSuperview];
-    self.contentViewController = nil;    
+    self.contentViewController = nil;
+    self.containerView = nil;
+    self.contentView = nil;
+    self.viewController = nil;
     self.window = nil;
+    self.keyboardShown = NO;
 }
 
 - (void)setModalBackgroundColor:(UIColor *)modalBackgroundColor{

@@ -20,7 +20,7 @@
     showButtonRect.size = CGSizeMake(200, 62);
     showButtonRect.origin.x = round(CGRectGetMidX(self.window.rootViewController.view.bounds)-CGRectGetMidX(showButtonRect));
     showButtonRect.origin.y = CGRectGetHeight(self.window.rootViewController.view.bounds)-CGRectGetHeight(showButtonRect)-10;
-    UIButton *showButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
+    UIButton *showButton = [UIButton buttonWithType:UIButtonTypeCustom];
     showButton.frame = showButtonRect;
     showButton.autoresizingMask =
     UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
@@ -28,7 +28,13 @@
     [showButton addTarget:self action:@selector(showAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.window.rootViewController.view addSubview:showButton];
 
-    [KGModal sharedInstance].closeButtonType = KGModalCloseButtonTypeRight;
+    [KGModal sharedInstance].closeButtonType = KGModalCloseButtonTypeNone;
+    [KGModal sharedInstance].tapOutsideToDismiss = NO;
+    [KGModal sharedInstance].backgroundDisplayStyle = KGModalBackgroundDisplayStyleSolid;
+    [KGModal sharedInstance].modalBackgroundColor = [UIColor clearColor];
+    [KGModal sharedInstance].bordered = NO;
+    [KGModal sharedInstance].contentPortraitTopMargin = 100;
+    [KGModal sharedInstance].contentLandscapeTopMargin = 0;
     
     [self.window makeKeyAndVisible];
 
@@ -47,14 +53,15 @@
     welcomeLabelRect.origin.y = 20;
     welcomeLabelRect.size.height = 20;
     UIFont *welcomeLabelFont = [UIFont boldSystemFontOfSize:17];
-    UILabel *welcomeLabel = [[UILabel alloc] initWithFrame:welcomeLabelRect];
+    UITextField *welcomeLabel = [[UITextField alloc] initWithFrame:welcomeLabelRect];
     welcomeLabel.text = @"Welcome to KGModal!";
     welcomeLabel.font = welcomeLabelFont;
     welcomeLabel.textColor = [UIColor whiteColor];
     welcomeLabel.textAlignment = NSTextAlignmentCenter;
     welcomeLabel.backgroundColor = [UIColor clearColor];
-    welcomeLabel.shadowColor = [UIColor blackColor];
-    welcomeLabel.shadowOffset = CGSizeMake(0, 1);
+    welcomeLabel.contentVerticalAlignment = UIControlContentVerticalAlignmentTop;
+//    welcomeLabel.shadowColor = [UIColor blackColor];
+//    welcomeLabel.shadowOffset = CGSizeMake(0, 1);
     [contentView addSubview:welcomeLabel];
 
     CGRect infoLabelRect = CGRectInset(contentView.bounds, 5, 5);
@@ -76,12 +83,14 @@
     CGFloat btnH = CGRectGetMaxY(contentView.frame)-5 - btnY;
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeRoundedRect];
     btn.frame = CGRectMake(infoLabelRect.origin.x, btnY, infoLabelRect.size.width, btnH);
-    [btn setTitle:@"Close Button Right" forState:UIControlStateNormal];
-    [btn addTarget:self action:@selector(changeCloseButtonType:) forControlEvents:UIControlEventTouchUpInside];
+    [btn setTitle:@"Close" forState:UIControlStateNormal];
+    [btn addTarget:self action:@selector(close:) forControlEvents:UIControlEventTouchUpInside];
     [contentView addSubview:btn];
 
 //    [[KGModal sharedInstance] setCloseButtonLocation:KGModalCloseButtonLocationRight];
-    [[KGModal sharedInstance] showWithContentView:contentView andAnimated:YES];
+    [[KGModal sharedInstance] showWithContentView:contentView withCompletionBlock:^{
+//        [welcomeLabel becomeFirstResponder];
+    }];
 }
 
 - (void)willShow:(NSNotification *)notification{
@@ -100,21 +109,9 @@
     NSLog(@"did hide");
 }
 
-- (void)changeCloseButtonType:(id)sender{
-    UIButton *button = (UIButton *)sender;
+- (void)close:(id)sender{
     KGModal *modal = [KGModal sharedInstance];
-    KGModalCloseButtonType type = modal.closeButtonType;
-    
-    if(type == KGModalCloseButtonTypeLeft){
-        modal.closeButtonType = KGModalCloseButtonTypeRight;
-        [button setTitle:@"Close Button Right" forState:UIControlStateNormal];
-    }else if(type == KGModalCloseButtonTypeRight){
-        modal.closeButtonType = KGModalCloseButtonTypeNone;
-        [button setTitle:@"Close Button None" forState:UIControlStateNormal];
-    }else{
-        modal.closeButtonType = KGModalCloseButtonTypeLeft;
-        [button setTitle:@"Close Button Left" forState:UIControlStateNormal];
-    }
+    [modal hide];
 }
 
 @end
